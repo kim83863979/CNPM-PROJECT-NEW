@@ -1,14 +1,26 @@
 #pragma once
+#ifndef SCORE_H
+#define SCORE_H
+
 #include <string>
+
 using namespace std;
 
 class Score {
 private:
-    string subject;
-    double grade;
+    string scoreID;
+    string courseName;
+    float score;
+    string status;
 
 public:
-    Score();
-    Score(string subject, double grade);
-    void display();
+    Score(string id, string name, float scr, string stat);
+    void display() const;
+
+    string getScoreID() const;
+    string getCourseName() const;
+    float getScore() const;
+    string getStatus() const;
 };
+
+#endif
