@@ -1,28 +1,27 @@
-#pragma once
+// Timetable.h
 #ifndef TIMETABLE_H
 #define TIMETABLE_H
 
 #include <string>
 
-using namespace std;
-
 class Timetable {
 private:
-    string timetableID;
-    string courseName;
-    string dayOfWeek;
-    string time;
-    string room;
+    std::string timetableID;
+    std::string courseName;
+    std::string dayOfWeek;
+    std::string time;
+    std::string room;
 
 public:
-    Timetable(string id, string name, string day, string time, string room);
+    Timetable(const std::string& id, const std::string& name, 
+              const std::string& day, const std::string& t, const std::string& r);
     void display() const;
 
-    string getTimetableID() const;
-    string getCourseName() const;
-    string getDayOfWeek() const;
-    string getTime() const;
-    string getRoom() const;
+    std::string getTimetableID() const;
+    std::string getCourseName() const;
+    std::string getDayOfWeek() const;
+    std::string getTime() const;
+    std::string getRoom() const;
 };
 
 #endif

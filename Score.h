@@ -1,26 +1,24 @@
-#pragma once
+// Score.h
 #ifndef SCORE_H
 #define SCORE_H
 
 #include <string>
 
-using namespace std;
-
 class Score {
 private:
-    string scoreID;
-    string courseName;
+    std::string scoreID;
+    std::string courseName;
     float score;
-    string status;
+    std::string status;
 
 public:
-    Score(string id, string name, float scr, string stat);
+    Score(const std::string& id, const std::string& name, float scr, const std::string& stat);
     void display() const;
 
-    string getScoreID() const;
-    string getCourseName() const;
+    std::string getScoreID() const;
+    std::string getCourseName() const;
     float getScore() const;
-    string getStatus() const;
+    std::string getStatus() const;
 };
 
 #endif
