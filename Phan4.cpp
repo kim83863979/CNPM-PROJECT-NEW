@@ -1,231 +1,155 @@
-#include "Admin.h"   
-#include "Student.h" 
-#include "Account.h" 
 
-#include <iostream>  
-#include <string>    
-#include <vector>    
-using namespace std;
+#include "Admin.h"
+#include "ConsoleUI.h"
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <algorithm> // Cần cho std::all_of
+#include <cctype>    // Cần cho isspace
+#include <memory>
 
-
-Admin::Admin(const string& id, const string& name, int level) {
-    this->adminID = id;
-    this->fullName = name;
-    this->adminLevel = level;
-}
-
-string Admin::getFullName() const {
-    return this->fullName;
-}
-
-/**
- * 1. TÌM KIẾM TÀI KHOẢN SINH VIÊN
- */
-void Admin::searchStudentAccount(const vector<Student>& dsSinhVien) {
-    string idCanTim;
-    cout << "+---------------------------------------+" << endl;
-    cout << "|           TIM KIEM SINH VIEN          |" << endl;
-    cout << "+---------------------------------------+" << endl;
-    cout << "Nhap Ma So Sinh Vien (MSSV) can tim: ";
-
-    getline(cin, idCanTim);
-
-    int index = findStudentIndex(dsSinhVien, idCanTim);
-
-    if (index != -1) {
-        cout << "--- Tim Thay Sinh Vien ---" << endl;
-        cout << "MSSV:         " << dsSinhVien[index].studentID << endl;
-        cout << "Ho ten:       " << dsSinhVien[index].fullName << endl;
-        cout << "Lop:          " << dsSinhVien[index].className << endl;
-        cout << "Chuyen nganh: " << dsSinhVien[index].major << endl;
-        cout << "Trang thai:   " << dsSinhVien[index].status << endl;
-    } else {
-        cout << "Loi: Khong tim thay sinh vien voi MSSV \"" << idCanTim << "\"." << endl;
+Admin::Admin(const std::vector<std::string>& fields) {
+    // expected: adminID,fullName,level,accountID
+    if (fields.size() >= 4) {
+        adminID = fields[0];
+        fullName = fields[1];
+        try { adminLevel = std::stoi(fields[2]); }
+        catch (...) { adminLevel = 0; }
+        linkedAccountID = fields[3];
     }
-    
-    cout << "Nhan Enter de tiep tuc...";
-    cin.get(); 
+    account = nullptr;
 }
 
+Admin::Admin(const std::string& id, const std::string& name, int level, Account* acc)
+    : adminID(id), fullName(name), adminLevel(level), account(acc) {
+}
 
-/**
- * 2. TẠO TÀI KHOẢN SINH VIÊN MỚI
- */
-void Admin::createStudentAccount(vector<Student>& dsSinhVien, vector<Account>& dsTaiKhoan) {
-    Student svMoi;
-    Account tkMoi;
+void Admin::setAccount(Account* acc) { account = acc; }
+Account* Admin::getAccount() const { return account; }
+std::string Admin::getAccountID() const { return account ? account->getAccountID() : linkedAccountID; }
 
-    cout << "+---------------------------------------+" << endl;
-    cout << "|         TAO TAI KHOAN MOI             |" << endl;
-    cout << "+---------------------------------------+" << endl;
+std::string Admin::getFullName() const { return fullName; }
+std::string Admin::getAdminID() const { return adminID; }
 
-    while (true) {
-        cout << "Nhap MSSV (Ma So Sinh Vien): ";
-        getline(cin, svMoi.studentID);
-
-        int index = findStudentIndex(dsSinhVien, svMoi.studentID);
-        
-        if (index != -1) {
-            cout << "Loi: MSSV \"" << svMoi.studentID << "\" da ton tai. Vui long nhap lai." << endl;
-        } else {
-            break; 
+void Admin::searchStudentAccount(const std::vector<Student>& dsSinhVien) const {
+    std::string id = ConsoleUI::promptInput("Nhap ID sinh vien can tim");
+    for (const auto& s : dsSinhVien) {
+        if (s.getID() == id) {
+            s.viewProfile();
+            return;
         }
     }
-    
-    cout << "Nhap Ho va Ten: ";
-    getline(cin, svMoi.fullName);
-    cout << "Nhap Lop: ";
-    getline(cin, svMoi.className);
-    cout << "Nhap Chuyen nganh: ";
-    getline(cin, svMoi.major);
-    svMoi.status = "Dang hoc"; 
-
-    tkMoi.accountID = svMoi.studentID;
-    tkMoi.username = svMoi.studentID;
-    tkMoi.role = "Student";
-    cout << "Nhap Mat khau mac dinh: ";
-    getline(cin, tkMoi.password);
-
-    dsSinhVien.push_back(svMoi);
-    dsTaiKhoan.push_back(tkMoi);
-
-    cout << "==> Da tao tai khoan cho sinh vien " << svMoi.fullName << " thanh cong." << endl;
-    cout << "Nhan Enter de tiep tuc...";
-    cin.get();
+    ConsoleUI::showMessage("Khong tim thay sinh vien voi ID: " + id);
 }
 
+void Admin::createStudentAccount(std::vector<Student>& dsSinhVien, std::vector<std::unique_ptr<Account>>& dsTaiKhoan) {
+    ConsoleUI::clearScreen();
+    std::cout << "\n--- TAO TAI KHOAN SINH VIEN MOI ---\n";
 
-/**
- * 3. XÓA TÀI KHOẢN SINH VIÊN
- */
-void Admin::deleteStudentAccount(vector<Student>& dsSinhVien, vector<Account>& dsTaiKhoan) {
-    string idCanXoa;
-    cout << "+---------------------------------------+" << endl;
-    cout << "|             XOA TAI KHOAN             |" << endl;
-    cout << "+---------------------------------------+" << endl;
-    cout << "Nhap MSSV cua tai khoan can xoa: ";
+    // 1. INPUT: Nhập tất cả dữ liệu (ConsoleUI xử lý nhập và newline)
+    std::string sid = ConsoleUI::promptInput("Nhap ID sinh vien moi (SVxxx)");
+    std::string name = ConsoleUI::promptInput("Nhap Ho va Ten");
+    std::string dob = ConsoleUI::promptInput("Nhap Ngay sinh (dd/mm/yyyy)");
+    std::string gender = ConsoleUI::promptInput("Nhap Gioi tinh");
+    std::string cls = ConsoleUI::promptInput("Nhap Lop hoc");
+    std::string major = ConsoleUI::promptInput("Nhap Chuyen nganh");
+    std::string course = ConsoleUI::promptInput("Nhap Khoa hoc (VD: K17)");
+    std::string status = ConsoleUI::promptInput("Nhap Tinh trang hoc tap (VD: Active)");
+    std::string phone = ConsoleUI::promptInput("Nhap SDT");
+    std::string email = ConsoleUI::promptInput("Nhap Email");
+    std::string accID = ConsoleUI::promptInput("Nhap accountID cho sinh vien (username)");
+    std::string pass = ConsoleUI::promptInput("Nhap mat khau (>=8 ky tu, co so & ky tu dac biet)");
 
-    getline(cin, idCanXoa);
+    // Kiểm tra ID không được rỗng/chỉ là dấu cách
+    auto is_blank = [](const std::string& s) {
+        return s.empty() || std::all_of(s.begin(), s.end(), [](char c) { return std::isspace(static_cast<unsigned char>(c)); });
+        };
 
-    int sv_index = findStudentIndex(dsSinhVien, idCanXoa);
-    int tk_index = findAccountIndex(dsTaiKhoan, idCanXoa);
-
-    if (sv_index == -1 || tk_index == -1) {
-        cout << "Loi: Khong tim thay sinh vien hoac tai khoan voi MSSV \"" << idCanXoa << "\"." << endl;
-        cout << "Nhan Enter de tiep tuc...";
-        cin.get();
-        return; 
-    }
-
-    cout << "Tim thay sinh vien: " << dsSinhVien[sv_index].fullName << endl;
-    cout << "Ban co chac chan muon xoa tai khoan nay? (c/k): ";
-    string xacNhan;
-    getline(cin, xacNhan);
-
-    if (xacNhan == "c" || xacNhan == "C") {
-        dsSinhVien.erase(dsSinhVien.begin() + sv_index);
-        dsTaiKhoan.erase(dsTaiKhoan.begin() + tk_index);
-        
-        cout << "==> Da xoa tai khoan thanh cong." << endl;
-    } else {
-        cout << "==> Da huy bo thao tac xoa." << endl;
-    }
-    cout << "Nhan Enter de tiep tuc...";
-    cin.get();
-}
-
-
-/**
- * 4. HIỂN THỊ DANH SÁCH SINH VIÊN
- */
-void Admin::displayStudentList(const vector<Student>& dsSinhVien) {
-    cout << "+---------------------------------------------------+" << endl;
-    cout << "|               DANH SACH SINH VIEN                 |" << endl;
-    cout << "+---------------------------------------------------+" << endl;
-
-    if (dsSinhVien.empty()) {
-        cout << "Chua co sinh vien nao trong he thong." << endl;
-        cout << "Nhan Enter de tiep tuc...";
-        cin.get();
+    if (is_blank(sid) || is_blank(accID)) {
+        ConsoleUI::showMessage("LOI: ID sinh vien hoac AccountID khong duoc de trong!");
         return;
     }
 
-    cout << "MSSV\t\tHo Ten\t\t\tLop\t\tChuyen Nganh" << endl;
-    cout << "-----------------------------------------------------" << endl;
+    // 2. LOGIC: Tạo đối tượng
 
-    for (int i = 0; i < dsSinhVien.size(); ++i) {
-        cout << dsSinhVien[i].studentID << "\t"
-             << dsSinhVien[i].fullName << "\t\t"
-             << dsSinhVien[i].className << "\t\t"
-             << dsSinhVien[i].major << endl;
-    }
-    
-    cout << "+---------------------------------------------------+" << endl;
-    cout << "Nhan Enter de tiep tuc...";
-    cin.get(); 
+    // A. Tạo Student mới
+    dsSinhVien.emplace_back(sid, name, phone, email, dob, gender, cls, major, course, status, (Account*)nullptr);
+
+    // B. Gán linkedAccountID cho Student mới
+    dsSinhVien.back().setLinkedAccountID(accID);
+
+    // C. Tạo Account mới
+    dsTaiKhoan.emplace_back(std::make_unique<Account>(accID, pass, "Student"));
+
+    // 3. OUTPUT: Hiển thị kết quả
+    ConsoleUI::showMessage("Tao tai khoan sinh vien thanh cong!");
 }
 
-
-/**
- * 5. CẬP NHẬT MẬT KHẨU ADMIN
- */
-void Admin::updatePassword() {
-    string matKhauHienTai, matKhauMoi, xacNhanMK;
-    
-    cout << "+---------------------------------------+" << endl;
-    cout << "|         DOI MAT KHAU ADMIN            |" << endl;
-    cout << "+---------------------------------------+" << endl;
-    
-    cout << "Nhap mat khau hien tai: ";
-    getline(cin, matKhauHienTai);
-    
-    cout << "Nhap mat khau moi (it nhat 8 ky tu): ";
-    getline(cin, matKhauMoi);
-    cout << "Xac nhan mat khau moi: ";
-    getline(cin, xacNhanMK);
-
-    if (matKhauMoi != xacNhanMK) {
-        cout << "Loi: Mat khau xac nhan khong khop." << endl;
-        cout << "Nhan Enter de tiep tuc...";
-        cin.get();
-        return;
-    }
-
-    if (matKhauMoi.length() < 8) {
-        cout << "Loi: Mat khau moi phai co it nhat 8 ky tu." << endl;
-        cout << "Nhan Enter de tiep tuc...";
-        cin.get();
-        return;
-    }
-
-    cout << "==> Doi mat khau thanh cong." << endl;
-    cout << "Nhan Enter de tiep tuc...";
-    cin.get();
-}
-
-
-// --- TRIỂN KHAI CÁC HÀM TRỢ GIÚP (PRIVATE) ---
-
-/**
- * 1. Tìm sinh viên bằng ID, trả về CHỈ SỐ (index)
- * Dùng vòng lặp for đơn giản.
- */
-int Admin::findStudentIndex(const vector<Student>& dsSinhVien, const string& id) {
-    for (int i = 0; i < dsSinhVien.size(); ++i) {
-        if (dsSinhVien[i].studentID == id) {
-            return i; 
+void Admin::deleteStudentAccount(std::vector<Student>& dsSinhVien, std::vector<std::unique_ptr<Account>>& dsTaiKhoan) {
+    std::string sid = ConsoleUI::promptInput("Nhap ID sinh vien can xoa");
+    for (auto it = dsSinhVien.begin(); it != dsSinhVien.end(); ++it) {
+        if (it->getID() == sid) {
+            std::string aid = it->getAccountID();
+            dsSinhVien.erase(it);
+            // xoa account
+            for (auto it2 = dsTaiKhoan.begin(); it2 != dsTaiKhoan.end(); ++it2) {
+                if ((*it2) && (*it2)->getAccountID() == aid) { dsTaiKhoan.erase(it2); break; }
+            }
+            ConsoleUI::showMessage("Da xoa sinh vien va account lien quan.");
+            return;
         }
     }
-    return -1; 
+    ConsoleUI::showMessage("Khong tim thay sinh vien de xoa.");
 }
 
-/**
- * 2. Tìm tài khoản bằng ID, trả về CHỈ SỐ (index)
- */
-int Admin::findAccountIndex(const vector<Account>& dsTaiKhoan, const string& id) {
-    for (int i = 0; i < dsTaiKhoan.size(); ++i) {
-        if (dsTaiKhoan[i].accountID == id) {
-            return i; 
-        }
+void Admin::displayStudentList(const std::vector<Student>& dsSinhVien) const {
+    std::cout << "\n--- Danh sach sinh vien ---\n";
+
+    // Header (Sử dụng độ rộng tối ưu để tránh tràn)
+    std::cout << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
+    std::cout << "| " << std::left << std::setw(8) << "ID"
+        << "| " << std::setw(20) << "Ho Ten"
+        << "| " << std::setw(12) << "Ngay Sinh"
+        << "| " << std::setw(8) << "Gioi Tinh"
+        << "| " << std::setw(10) << "Lop"
+        << "| " << std::setw(25) << "Chuyen Nganh"
+        << "| " << std::setw(10) << "Khoa hoc"
+        << "| " << std::setw(15) << "Tinh trang" << " |\n";
+    std::cout << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
+
+    // Danh sách (Body)
+    for (const auto& s : dsSinhVien) {
+        std::cout << "| " << std::left << std::setw(8) << s.getID()
+            << "| " << std::setw(20) << s.getName()
+            << "| " << std::setw(12) << s.getDateOfBirth()
+            << "| " << std::setw(8) << s.getGender()
+            << "| " << std::setw(10) << s.getClassName()
+            << "| " << std::setw(25) << s.getMajor()
+            << "| " << std::setw(10) << s.getCourse()
+            << "| " << std::setw(15) << s.getAcademicStatus() << " |\n";
     }
-    return -1; 
+    std::cout << "------------------------------------------------------------------------------------------------------------------------------------------------\n";
+
+    ConsoleUI::pressEnterToContinue();
+}
+
+bool Admin::updatePassword() {
+    if (!account) {
+        ConsoleUI::showMessage("Khong co account admin lien ket!");
+        return false;
+    }
+    std::string oldp = ConsoleUI::promptInput("Nhap mat khau cu");
+    std::string newp = ConsoleUI::promptInput("Nhap mat khau moi");
+    if (account->changePassword(oldp, newp)) {
+        ConsoleUI::showMessage("Doi mat khau thanh cong!");
+        return true;
+    }
+    ConsoleUI::showMessage("Doi mat khau khong thanh cong!");
+    return false;
+}
+
+std::string Admin::toFileString() const {
+    // adminID,fullName,level,accountID
+    std::string aid = account ? account->getAccountID() : linkedAccountID;
+    return adminID + "," + fullName + "," + std::to_string(adminLevel) + "," + aid;
+}
