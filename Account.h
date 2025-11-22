@@ -1,30 +1,31 @@
 #pragma once
-#ifndef ACCOUNT_H
-#define ACCOUNT_H
-
 #include <string>
-
-using namespace std;
 
 class Account {
 private:
-    string username;
-    string password;
-    string role;
-    bool isValidNewPassword(const string& newPass);
+    std::string accountID;
+    std::string password;
+    std::string role;
+    bool loggedIn = false;
+
+    bool isValidNewPassword(const std::string& newPass) const;
 
 public:
-    Account(string user, string pass, string role);
-    string getUsername() const;
-    string getRole() const;
+    Account() = default;
+    Account(const std::string& id, const std::string& pass, const std::string& role);
 
-    string getPassword() const;
-    //Day la ham khong an toan, nhung can thiet de saveData
+    std::string getAccountID() const;
+    std::string getRole() const;
+    std::string getPasswordForSave() const;
 
-    bool login(const string& user, const string& pass);
+    bool login(const std::string& id, const std::string& pass);
     void logout();
-    bool changePassword(const string& oldPass, const string& newPass);
-    bool checkPassword(const string& pass);
+
+    bool changePassword(const std::string& oldPass, const std::string& newPass);
+    bool checkPassword(const std::string& pass) const;
+
+    std::string toFileString() const;
 };
 
-#endif
+
+
