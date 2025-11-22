@@ -1,53 +1,39 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "ConsoleUI.h"  
-#include "Student.h"   
-#include "Admin.h"      
-#include "Account.h"   
-#include "Score.h"      
-#include "Timetable.h"
-using namespace std;
-
-
-class Student;
-class Admin;
-class Account;
+#include <memory>
+#include "Account.h"
+#include "Student.h"
+#include "Admin.h"
 
 class SystemManager {
+private:
+    std::vector<std::unique_ptr<Account>> allAccounts;
+    std::vector<Student> allStudents;
+    std::vector<Admin> allAdmins;
+
+    std::string DATA_FILE;
+    std::string currentUserID;
+    std::string currentUserRole; // "Student" or "Admin"
+
+    // helpers
+    Student* findStudentByAccountID(const std::string& accID);
+    Admin* findAdminByAccountID(const std::string& accID);
+    Account* findAccountByID(const std::string& accID);
+
+    // Hàm mới để liên kết con trỏ sau khi vector ổn định
+    void linkStudentsToAccounts();
 
 public:
-    //Khởi tạo giá trị ban đầu cho hệ thống.
     SystemManager();
-
     void run();
 
-private:
-    //PHẦN 1: I/O (Lưu trữ)
+    bool handleLogin();
+    void handleLogout();
 
-    void loadData();//Tải dữ liệu từ file 'student_data.txt' vào các vector.
+    void showStudentMenu();
+    void showAdminMenu();
 
-    void saveData();//Ghi dữ liệu từ các vector vào file 'student_data.txt'
-
-    // PHẦN 2: CONTROLLER (Điều khiển) 
-
-    bool handleLogin();//Xử lý luồng đăng nhập, bao gồm kiểm tra 5 lần sai.
-
-    void handleLogout();//Xử lý đăng xuất (đặt currentUser về null).
-
-    void showStudentMenu();//Hiển thị và xử lý vòng lặp menu cho Student.
-
-    void showAdminMenu();//Hiển thị và xử lý vòng lặp menu cho Admin.
-
-    // PHẦN 3: STATE (Trạng thái & Dữ liệu) 
-
-    // Tên file text cố định để lưu/tải dữ liệu.
-    const string DATA_FILE;
-
-    Account* currentUser;
- 
-    vector<Student> allStudents;
-    
-    vector<Admin> allAdmins;
+    void saveData();
+    void loadData();
 };
-
