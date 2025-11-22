@@ -1,26 +1,26 @@
 #pragma once
-#ifndef SCORE_H
-#define SCORE_H
-
 #include <string>
-
-using namespace std;
+#include <vector>
 
 class Score {
 private:
-    string scoreID;
-    string courseName;
-    float score;
-    string status;
+    std::string scoreID;
+    std::string courseName;
+    float scoreValue = 0.0f;  // Khởi tạo an toàn
+    std::string status;        // e.g., "Approved" / "Pending"
 
 public:
-    Score(string id, string name, float scr, string stat);
+    Score() = default;
+    Score(const std::string& id, const std::string& name, float val, const std::string& stat);
+    Score(const std::vector<std::string>& fields); // constructor từ vector<string> khi load file
+
     void display() const;
 
-    string getScoreID() const;
-    string getCourseName() const;
+    std::string getScoreID() const;
+    std::string getCourseName() const;
     float getScore() const;
-    string getStatus() const;
+    std::string getStatus() const;
+
+    std::string toFileString() const;
 };
 
-#endif
