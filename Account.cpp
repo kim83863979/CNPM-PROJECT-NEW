@@ -1,48 +1,50 @@
 #include "Account.h"
-#include <string>
-#include <cctype> 
+#include <cctype>
+#include <algorithm>
 
-using namespace std;
-Account::Account(std::string user, std::string pass, std::string role)
-    : username(user),
-    password(pass), 
-    role(role)
-{ }
+Account::Account(const std::string& id, const std::string& pass, const std::string& role)
+    : accountID(id), password(pass), role(role) {
+}
 
-string Account::getUsername() const { return this->username; }
-string Account::getRole() const { return this->role; }
+std::string Account::getAccountID() const { return accountID; }
+std::string Account::getRole() const { return role; }
+std::string Account::getPasswordForSave() const { return password; }
 
-string Account::getPassword() const { return this->password; }
-
-bool Account::login(const string& user, const string& pass) {
-    return (this->username == user && this->password == pass);
+bool Account::login(const std::string& id, const std::string& pass) {
+    if (accountID == id && password == pass) {
+        loggedIn = true;
+        return true;
+    }
+    return false;
 }
 
 void Account::logout() {
-    // Khong can lam gi
+    loggedIn = false;
 }
 
-bool Account::changePassword(const string& oldPass, const string& newPass) {
-    if (!checkPassword(oldPass)) { return false; }
-    if (!isValidNewPassword(newPass)) { return false; }
-    this->password = newPass;
+bool Account::checkPassword(const std::string& pass) const {
+    return password == pass;
+}
+
+bool Account::isValidNewPassword(const std::string& newPass) const {
+    if (newPass.size() < 8) return false;
+    bool hasDigit = false, hasSpecial = false;
+    std::string special = "!@#$%^&*()_+-=[]{};:,.<>?/\\|";
+    for (char ch : newPass) {
+        if (std::isdigit(static_cast<unsigned char>(ch))) hasDigit = true;
+        if (special.find(ch) != std::string::npos) hasSpecial = true;
+    }
+    return hasDigit && hasSpecial;
+}
+
+bool Account::changePassword(const std::string& oldPass, const std::string& newPass) {
+    if (!checkPassword(oldPass)) return false;
+    if (!isValidNewPassword(newPass)) return false;
+    password = newPass;
     return true;
 }
 
-bool Account::checkPassword(const string& pass) {
-    return (this->password == pass);
+std::string Account::toFileString() const {
+    return accountID + "," + password + "," + role;
 }
 
-bool Account::isValidNewPassword(const string& newPass) {
-    if (newPass.length() < 8) { return false; }
-    bool hasNumber = false;
-    bool hasSpecial = false;
-    string specialChars = "!@#$%^&*()_+-=[]{};:,.<>?";
-
-    for (int i = 0; i < newPass.length(); i++) {
-        char ch = newPass[i];
-        if (isdigit(ch)) { hasNumber = true; }
-        if (specialChars.find(ch) != string::npos) { hasSpecial = true; }
-    }
-    return hasNumber && hasSpecial;
-}
