@@ -1,27 +1,42 @@
-﻿#include "Score.h"
+#include "Score.h"
 #include <iostream>
 #include <iomanip>
-#include <string>
 
-using namespace std;
+Score::Score(const std::string& id, const std::string& name, float val, const std::string& stat)
+    : scoreID(id), courseName(name), scoreValue(val), status(stat) {
+}
 
-Score::Score(string id, string name, float scr, string stat)
-    : scoreID(id),
-    courseName(name),
-    score(scr),
-    status(stat)
-{ }
-void Score::display() const {
-    cout << "| " << left << setw(30) << this->courseName;
-    if (this->status == "Pending") {
-        cout << "| " << left << setw(15) << "Pending approval" << " |" << endl;
+Score::Score(const std::vector<std::string>& fields) {
+    // expected: scoreID, courseName, scoreValue, status
+    if (fields.size() >= 4) {
+        scoreID = fields[0];
+        courseName = fields[1];
+        try {
+            scoreValue = std::stof(fields[2]);
+        }
+        catch (...) { scoreValue = 0.0f; } // fallback an toàn
+        status = fields[3];
     }
     else {
-        cout << "| " << left << setw(15) << fixed << setprecision(1) << this->score << " |" << endl;
+        // fallback khi vector không đủ dữ liệu
+        scoreID = "";
+        courseName = "";
+        scoreValue = 0.0f;
+        status = "";
     }
 }
 
-string Score::getScoreID() const { return this->scoreID; }
-string Score::getCourseName() const { return this->courseName; }
-float Score::getScore() const { return this->score; }
-string Score::getStatus() const { return this->status; }
+void Score::display() const {
+    std::cout << "| " << std::left << std::setw(25) << courseName
+        << "| " << std::setw(8) << std::fixed << std::setprecision(1) << scoreValue
+        << "| " << std::setw(12) << status << " |\n";
+}
+
+std::string Score::getScoreID() const { return scoreID; }
+std::string Score::getCourseName() const { return courseName; }
+float Score::getScore() const { return scoreValue; }
+std::string Score::getStatus() const { return status; }
+
+std::string Score::toFileString() const {
+    return scoreID + "," + courseName + "," + std::to_string(scoreValue) + "," + status;
+}
